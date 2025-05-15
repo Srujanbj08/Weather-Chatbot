@@ -22,7 +22,8 @@ def get_weather(city):
         desc = data['weather'][0]['description']
         humidity = data['main']['humidity']
         wind = data['wind']['speed']
-        return f"Weather in {city}:\n- Temperature: {temp}°C\n- Description: {desc}\n- Humidity: {humidity}%\n- Wind Speed: {wind} m/s"
+        return f"Weather in {city}:
+- Temperature: {temp}°C\n- Description: {desc}\n- Humidity: {humidity}%\n- Wind Speed: {wind} m/s"
     else:
         return None
 
