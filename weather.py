@@ -37,18 +37,18 @@ st.set_page_config(page_title="Weather Chatbot", page_icon="☁")
 st.title("🌤 Interactive Weather Chatbot")
 st.write("🌎 Ask about the weather in any city around the world!")
 
-# Initialize chat history if not present
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-user_input = st.text_input("You:", "", placeholder="What's the weather in Paris?")
+# Use this key to control the input text value
+user_input = st.text_input("You:", key="user_input", placeholder="What's the weather in Paris?")
 
 if user_input:
     # Clear previous chat history on new input
     st.session_state.messages = []
 
     with st.spinner("🤖 Thinking..."):
-        # Step 1: Extract city name using Gemini
+        # Extract city name
         prompt = f"""Extract the city name from this input: "{user_input}". 
 If there's no city, respond with 'no city' only."""
         city_response = model.generate_content(prompt).text.strip()
@@ -58,10 +58,9 @@ If there's no city, respond with 'no city' only."""
         else:
             weather_data = get_weather(city_response)
             if weather_data:
-                # Add current user message
                 st.session_state.messages.append({"role": "user", "content": user_input})
 
-                # Show weather icon and details
+                # Show weather info
                 st.image(f"https://openweathermap.org/img/wn/{weather_data['icon']}@2x.png", width=100)
                 st.success(f"🌡️ **Weather in {weather_data['city'].title()}**")
                 st.write(f"Temperature: {weather_data['temp']}°C")
@@ -76,20 +75,21 @@ If there's no city, respond with 'no city' only."""
                     f"Wind Speed: {weather_data['wind']} m/s"
                 )
 
-                # Generate chatbot-like reply using Gemini
                 reply_prompt = f"""User asked: "{user_input}"
 Weather info: {weather_info_str}
 Reply like a friendly weather chatbot."""
                 reply = model.generate_content(reply_prompt).text.strip()
 
-                # Add bot reply
                 st.session_state.messages.append({"role": "bot", "content": reply})
 
-                # Display the current chat only
+                # Display current chat only
                 for msg in st.session_state.messages:
                     if msg["role"] == "user":
                         st.markdown(f"🧑‍💬 *You:* {msg['content']}")
                     else:
                         st.markdown(f"🤖 *Gemini:* {msg['content']}")
+
+                # CLEAR the input box after processing
+                st.session_state.user_input = ""
             else:
                 st.error("❗ Couldn't fetch weather. Please check the city name.")
