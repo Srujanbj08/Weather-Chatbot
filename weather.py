@@ -32,57 +32,64 @@ def get_weather(city):
     else:
         return None
 
-st.set_page_config(page_title="Weather Chatbot", page_icon="☁")
-st.title("🌤 Interactive Weather Chatbot")
-st.write("🌎 Ask about the weather in any city around the world!")
-
-# Initialize chat history if it doesn't exist
+# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Input box
-user_input = st.text_input("You:", key="user_input", placeholder="What's the weather in Paris?")
+st.set_page_config(page_title="Weather Chatbot", page_icon="☁")
+st.title("🌤 Interactive Weather Chatbot")
+st.markdown("Ask about the weather in any city and I'll respond like a smart assistant.")
 
-if user_input:
-    with st.spinner("🤖 Thinking..."):
-        # Extract city name using Gemini
-        prompt = f"""Extract the city name from this input: "{user_input}". 
-If there's no city, respond with 'no city' only."""
-        city_response = model.generate_content(prompt).text.strip()
+# Clear chat history button
+if st.button("🧹 Clear chat history"):
+    st.session_state.messages = []
 
-        if city_response.lower() == "no city":
-            bot_reply = "❗ Please specify a city in your question."
-        else:
-            weather_data = get_weather(city_response)
-            if weather_data:
-                # Format weather info string for chatbot prompt
-                weather_info_str = (
-                    f"Temperature: {weather_data['temp']}°C, "
-                    f"Description: {weather_data['desc']}, "
-                    f"Humidity: {weather_data['humidity']}%, "
-                    f"Wind Speed: {weather_data['wind']} m/s"
-                )
-
-                # Generate bot reply
-                reply_prompt = f"""User asked: "{user_input}"
-Weather info: {weather_info_str}
-Reply like a friendly weather chatbot."""
-                bot_reply = model.generate_content(reply_prompt).text.strip()
-
-                # Append user and bot messages to chat history
-                st.session_state.messages.append({"role": "user", "content": user_input})
-                st.session_state.messages.append({"role": "bot", "content": bot_reply})
-            else:
-                bot_reply = "❗ Couldn't fetch weather. Please check the city name."
-                st.session_state.messages.append({"role": "user", "content": user_input})
-                st.session_state.messages.append({"role": "bot", "content": bot_reply})
-
-        # Clear input box after sending
-        st.session_state.user_input = ""
-
-# Display full chat history
+# Display chat messages
 for msg in st.session_state.messages:
     if msg["role"] == "user":
-        st.markdown(f"🧑‍💬 *You:* {msg['content']}")
+        st.markdown(f"🧑‍💬 **You:** {msg['content']}")
     else:
-        st.markdown(f"🤖 *Gemini:* {msg['content']}")
+        content = msg['content']
+        # If weather info is included with icon URL, show icon
+        if "icon_url" in msg:
+            st.image(msg["icon_url"], width=80)
+        st.markdown(f"🤖 **Gemini:** {content}")
+
+# User input form for smoother UX
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("Type your message here", placeholder="E.g. What's the weather in London?")
+    submit = st.form_submit_button("Send")
+
+if submit and user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    with st.spinner("Gemini is thinking..."):
+        # Extract city name using Gemini
+        city_prompt = f"""Extract the city name from this input: "{user_input}". 
+If there's no city, respond with 'no city' only."""
+        city_response = model.generate_content(city_prompt).text.strip()
+
+        if city_response.lower() == "no city":
+            bot_reply = "❗ Please specify a city name so I can provide the weather."
+            st.session_state.messages.append({"role": "bot", "content": bot_reply})
+        else:
+            weather = get_weather(city_response)
+            if weather:
+                weather_text = (
+                    f"Temperature: {weather['temp']}°C\n"
+                    f"Description: {weather['desc'].capitalize()}\n"
+                    f"Humidity: {weather['humidity']}%\n"
+                    f"Wind Speed: {weather['wind']} m/s"
+                )
+                reply_prompt = f"""User asked: "{user_input}"
+Weather info: {weather_text}
+Reply like a helpful chatbot in one paragraph."""
+                bot_reply = model.generate_content(reply_prompt).text.strip()
+                # Add weather icon URL for display
+                icon_url = f"https://openweathermap.org/img/wn/{weather['icon']}@2x.png"
+                st.session_state.messages.append({"role": "bot", "content": bot_reply, "icon_url": icon_url})
+            else:
+                bot_reply = "Sorry, I couldn't fetch the weather. Please check the city name."
+                st.session_state.messages.append({"role": "bot", "content": bot_reply})
+
+    st.experimental_rerun()
