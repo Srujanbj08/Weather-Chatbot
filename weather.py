@@ -3,7 +3,7 @@ import requests
 import streamlit as st
 
 # Your API keys
-GENAI_API_KEY = "AIzaSyD5EUl6qZ5b9s2XnLbPeVuqLfPTavMDDHw"
+GENAI_API_KEY = "AIzaSyAF8KqyLPT2wvgalZnLoEDYqNK8ehS15Ko"
 WEATHER_API_KEY = "9d112b3aae1f0894636055a17f769607"
 
 # Configure Gemini
@@ -69,3 +69,4 @@ Reply like a friendly weather chatbot."""
                 st.info(f"🤖 {reply}")
             else:
                 st.error("❗ Couldn't fetch weather. Please check the city name.")
+
